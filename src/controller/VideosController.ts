@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { VideoDatabase } from "../database/VideoDatabase";
 import { Videos } from "../models/videos";
 import { TVideoDB, TVideoDBPost } from "../models/types";
+import { VideoBusiness } from "../business/VideoBusiness";
 
 export class VideosController {
     public getAllVideos =  async (req: Request, res: Response) => {
@@ -9,17 +10,10 @@ export class VideosController {
         try {
             const q = req.query.q as string | undefined
     
-            const videosDatabase = new VideoDatabase
-            const videosDB = await videosDatabase.findVideos(q)
+            const videoBusiness = new VideoBusiness
+            const uotput = await videoBusiness.getAllVideos(q)
     
-            const videos: Videos[] = videosDB.map((videosDB) => new Videos(
-                videosDB.id,
-                videosDB.title,
-                videosDB.duration,
-                videosDB.upload_at
-            ))
-    
-            res.status(200).send(videos)
+            res.status(200).send(uotput)
         } catch (error) {
             console.log(error)
     
@@ -37,45 +31,20 @@ export class VideosController {
     public createVideos = async (req: Request, res: Response) => {
         try {
             const { id, title, duration } = req.body
-    
-            if (typeof id !== "string") {
-                res.status(400)
-                throw new Error("'id' deve ser string")
+            const input  = {
+                id: req.body.id,
+                title: req.body.title,
+                duration: req.body.duration,
+                upload_at: req.body.upload_at
             }
+
+            //Instanciando a business
+            const videoBusiness = new VideoBusiness()
+
+            //Chamando o método da business correspondente
+            const output = await videoBusiness.createVideos(input)
     
-            if (typeof title !== "string") {
-                res.status(400)
-                throw new Error("'title' deve ser string")
-            }
-    
-            if (typeof duration !== "number") {
-                res.status(400)
-                throw new Error("'duration' deve ser string")
-            }
-    
-    //         const [ videoDBExists ]: TVideoDB[] | undefined[] = await db("videos").where({ id });
-    
-            const videosDatabase = new VideoDatabase()
-    
-            const videosDBExists = await videosDatabase.findVideosById(id)
-            const newVideo = new Videos(id, title, duration, new Date().toISOString());
-    
-            if (videosDBExists) {
-                res.status(400)
-                throw new Error("'id' de vídeo já existe!")
-                upload_at: newVideo.getUploadAt()
-            }
-    
-            const newVideoDB: TVideoDBPost = {
-                id: newVideo.getId(),
-                title: newVideo.getTitle(),
-                duration: newVideo.getDuration()
-            }
-            await videosDatabase.insertVideo(newVideoDB)
-    
-           
-    
-            res.status(201).send(newVideo)
+            res.status(201).send(output)
         } catch (error) {
             console.log(error)
     
@@ -95,48 +64,19 @@ export class VideosController {
         try {
             const id = req.params.id
             const { newTitle, newDuration }  = req.body
-    
-            if(!id && !newTitle && !newDuration){
-                res.status(400)
-                throw new Error("ERRO!")
-        }
-    
-        if (id !== undefined){
-            if (typeof id !== "string") {
-                res.status(400)
-                throw new Error("'ID' deve ser string")
+            const input  = {
+                id: req.body.id,
+                newTitle: req.body.newTitle,
+                newDuration: req.body.newDuration
             }
-        }
-            if (newTitle !== undefined){
-            if (typeof newTitle !== "string") {
-                res.status(400)
-                throw new Error("'Title' deve ser string")
-            }
-        }
-        if (newDuration !== undefined){
-            if (typeof newDuration !== "number") {
-                res.status(400)
-                throw new Error("'Duration' deve ser number")
-            }
-        }
-            const videosDatabase = new VideoDatabase()
-            const videosDBExists = await videosDatabase.findVideosById(id)
-    
-                if (!videosDBExists) {
-                    res.status(400)
-                    throw new Error("'Id' não consta na base de dados para edição")
-                }
-    
-            const updatedVideo = {
-                id: id || videosDBExists.id,
-                title: newTitle || videosDBExists.title,
-                duration: newDuration || videosDBExists.duration,
-                upload_at: videosDBExists.upload_at
-            }
-    
-                    await videosDatabase.updateVideoById(id, updatedVideo)
+            //Instanciando a business
+            const videoBusiness = new VideoBusiness()
+
+            //Chamando o método da business correspondente
+            const output = await videoBusiness.editVideos(input)
+
         
-            res.status(200).send({message: "Dados de vídeo atualizados com sucesso!"})
+            res.status(200).send(output)
     
         } catch (error) {
             console.log(error)
@@ -156,19 +96,10 @@ export class VideosController {
         try {
             const idToRemove = req.params.id
     
-            if (typeof idToRemove !== "string") {
-                res.status(400)
-                throw new Error("'Id' deve ser string")
-            }
-    
             const videosDatabase = new VideoDatabase()
             await videosDatabase.removeVideoById(idToRemove)
     
-            if (!idToRemove) {
-                res.status(400)
-                throw new Error("'Id' não pode ser excluida pois não existe do banco de dados!")
-            }
-        res.status(200).send({message: `'Id' de vídeo removida com sucesso!`})
+        res.status(201).send("Video removido com sucesso!");
     
         } catch (error) {
             console.log(error)
